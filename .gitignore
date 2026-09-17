@@ -22,3 +22,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# FC 部署包（由 server/ 的四个文件打包而成，可随时重新生成）
+server-fc.zip
