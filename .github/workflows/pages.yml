@@ -23,6 +23,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # 仓库变量 AI_ENDPOINT 设了就接上 Agent，没设就生成纯检索版。
+      # 变量在 Settings > Secrets and variables > Actions > Variables 里配。
+      # 这不是密钥——密钥只在 FC 的环境变量里，页面永远拿不到。
+      - name: Build index.html
+        env:
+          AI_ENDPOINT: ${{ vars.AI_ENDPOINT }}
+        run: python build_app.py
+
       # 运行时只需要 index.html（数据已内嵌）和 img/。
       # template.html / retrieval.js.part / data/*.json 是构建输入，不发布。
       - name: Assemble site

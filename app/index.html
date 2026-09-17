@@ -789,10 +789,11 @@ var SEARCH = (function(){
 "use strict";
 
 /* ===== AI のまとめ機能の接続先 =====
-   空のままなら AI の欄は出ず、ページは検索だけで動く（Artifact 上では
-   外部 fetch が CSP で落ちるので、ここは空にしておく）。
-   独立配備するときだけ、代理サーバ（例：アリババクラウド関数計算）の
-   URL をここに入れる。API キーはその代理側だけが持つ。 */
+   build_app.py が環境変数 AI_ENDPOINT の値を埋める（既定は空）。
+   空なら AI の欄は出ず、ページは検索だけで動く（Artifact 上では外部 fetch が
+   CSP で落ちるので、Artifact 版は空のまま生成する）。
+   独立配備するときだけ、代理サーバ（例：アリババクラウド関数計算）の URL を
+   AI_ENDPOINT に入れてビルドする。API キーはその代理側だけが持つ。 */
 var AI_ENDPOINT = "";
 
 var GUIDE = JSON.parse(document.getElementById("guide-data").textContent);

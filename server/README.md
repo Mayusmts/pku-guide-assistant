@@ -62,7 +62,18 @@ npm run build:docs     # 在项目根目录执行 python build_docs.py
 3. 启动命令 `node index.mjs`，监听端口 `9000`
 4. 配置上面的环境变量
 5. 添加 HTTP 触发器，以无认证（`anonymous`）方式公开
-6. 把分配到的 URL 填进 `app/template.html` 的 `AI_ENDPOINT`，再执行 `python build_app.py` 重新生成
+6. 把分配到的 URL 交给构建侧（**不改源码**）：
+
+   - 本地重新生成：`$env:AI_ENDPOINT = "https://<函数URL>"; python build_app.py`
+   - GitHub Pages：在仓库 *Settings → Secrets and variables → Actions → Variables*
+     新建变量 `AI_ENDPOINT`，值为同一个 URL。之后每次部署都会自动注入
+
+   `AI_ENDPOINT` 不是密钥，它只是公网地址；密钥只存在于 FC 的环境变量里。
+   不设这个变量时生成的是纯检索版，Agent 栏显示「まだ接続されていません」。
+
+   `ALLOW_ORIGIN` 必须设成页面的来源。用 GitHub Pages 时是
+   `https://mayusmts.github.io`（**只有协议+主机名，不带仓库路径**，浏览器
+   发送的 `Origin` 头就是这个形式）。
 
 确认方法：`curl <URL>/health` 返回 `{"ok":true,"configured":true,...}` 即可。
 

@@ -146,11 +146,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
         if path in ('/', '/index.html'):
-            # 生成物は AI_ENDPOINT が空。ここで同一生成元の /ask を差し込む。
+            # 生成物に何が埋まっていても、ここでは同一生成元の /ask に差し替える。
+            # （公開用ビルドは FC の URL が入っているため、空前提の置換はできない）
             self._file(
                 os.path.join(APP, 'index.html'), 'text/html; charset=utf-8',
-                lambda s: s.replace('var AI_ENDPOINT = "";',
-                                    'var AI_ENDPOINT = "/ask";', 1))
+                lambda s: re.sub(r'var AI_ENDPOINT = "[^"]*";',
+                                 'var AI_ENDPOINT = "/ask";', s, count=1))
             return
         if path == '/health':
             self._json(200, {
