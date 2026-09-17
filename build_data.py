@@ -223,7 +223,11 @@ def classify_figure(f):
             if cap:
                 b['caption'] = cap
             return b
-        return {'t': 'fig', 'caption': cap}
+        # 画像そのものは収録していない。ここで「図」の枠を出すと、
+        # 出てこない画像の抜け殻がページに並ぶ。説明文は本文として
+        # 意味を持つ（家賃・面積・手順など）ので段落に落とし、
+        # 説明文も無い figure は捨てる。
+        return {'t': 'p', 'html': cap} if cap else None
 
     # 引用（ポイント枠）。中にリンクが入っていることもあるので、
     # リンクカードより先に判定する。
@@ -639,8 +643,6 @@ def plain_text(secs):
                 out.append(b['title'] + ' ' + b.get('site', ''))
             elif b['t'] == 'img':
                 out.append(b.get('caption') or b['alt'])
-            elif b['t'] == 'fig' and b['caption']:
-                out.append(unesc(b['caption']))
     return '\n'.join(out)
 
 
@@ -732,10 +734,9 @@ def main():
     print('blocks     : 段落 %d / 箇条書き %d（項目 %d）/ 定義リスト %d / 注記 %d'
           % (stat['p'], stat['list'], stat['items'], stat.get('dl', 0),
              stat.get('note', 0)))
-    print('             小見出し %d / 表 %d / 画像 %d / 図の枠のみ %d / 添付 %d / リンクカード %d / 引用 %d'
+    print('             小見出し %d / 表 %d / 画像 %d / 添付 %d / リンクカード %d / 引用 %d'
           % (stat.get('label', 0), stat.get('table', 0), stat.get('img', 0),
-             stat.get('fig', 0), stat.get('att', 0), stat.get('card', 0),
-             stat['quote']))
+             stat.get('att', 0), stat.get('card', 0), stat['quote']))
     print('headings   : h2 %d / h3 %d' % (stat['h2'], stat['h3']))
     print('wip        :', [x['id'] for x in articles if x['wip']])
     print('no modified:', [x['id'] for x in articles if not x['modified']])

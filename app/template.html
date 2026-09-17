@@ -329,15 +329,6 @@ main{max-width:1120px; margin:0 auto; padding:22px 16px 72px}
 .doc-note.warn{background:var(--warn-soft); border-left:2px solid var(--warn); color:var(--ink)}
 .doc-note.tip{background:var(--surface-2); border-left:2px solid var(--line-2); color:var(--ink-2)}
 /* 画像は外部ホストなので出せない。図があったことと説明文だけ残す */
-.doc-fig{
-  display:flex; gap:9px; align-items:baseline; margin:0;
-  font-size:12px; color:var(--ink-3); line-height:1.7;
-  padding:8px 12px; border:1px dashed var(--line-2); border-radius:6px;
-}
-.doc-fig::before{
-  content:"図"; flex:none; font-size:10px; font-weight:700; letter-spacing:.06em;
-  color:var(--ink-3); border:1px solid var(--line-2); border-radius:3px; padding:0 4px;
-}
 .doc-quote{
   margin:0; padding:9px 13px; border-left:2px solid var(--line-2);
   font-size:13px; color:var(--ink-2); line-height:1.8;
@@ -673,7 +664,6 @@ function plainOf(a){
     if(s.heading) out.push(s.heading);
     s.blocks.forEach(function(b){
       if(b.t === "list") b.items.forEach(function(i){ out.push(untag(i)); });
-      else if(b.t === "fig"){ if(b.caption) out.push(b.caption); }
       else out.push(untag(b.html));
     });
   });
@@ -1113,7 +1103,6 @@ function renderBlock(b){
   if(b.t === "label")return fill(el("p","doc-label"), b.html);
   if(b.t === "note") return fill(el("p","doc-note " + (b.kind || "warn")), b.html);
   if(b.t === "quote")return fill(el("blockquote","doc-quote"), b.html);
-  if(b.t === "fig")  return el("p","doc-fig", b.caption || "図（このページには未収録）");
   if(b.t === "dl"){
     var dl = el("dl","doc-dl");
     b.rows.forEach(function(r){
@@ -1148,9 +1137,10 @@ function renderBlock(b){
     im.src = b.src; im.alt = b.alt;
     im.width = b.w; im.height = b.h;
     im.loading = "lazy";
-    /* 読み込めなかったときは説明文だけ残す */
+    /* 読み込めなかったときは説明文だけを段落として残す。
+       「図」の枠は出さない（出ない画像の抜け殻になるため） */
     im.addEventListener("error", function(){
-      var ph = el("p","doc-fig", b.caption || b.alt);
+      var ph = el("p","doc-p", b.caption || b.alt);
       if(figure.parentNode) figure.parentNode.replaceChild(ph, figure);
     });
     figure.appendChild(im);
