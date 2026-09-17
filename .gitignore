@@ -1,0 +1,24 @@
+# 抓取来的原始资料（第三方版权内容，不随仓库分发）
+# 重建方式见 README「构建与运行」
+materials/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# 环境变量（DASHSCOPE_API_KEY 等）
+.env
+.env.*
+!.env.example
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

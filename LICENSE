@@ -1,0 +1,34 @@
+MIT License
+
+Copyright (c) 2026 Mayumsts
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+以下内容不在本许可证范围内 / Not covered by the license above:
+
+《北京大学留学指南（非官方・参考版）》的正文、图片及附件，著作权归原作者所有。
+本仓库中派生自该指南的数据文件（`app/data/guide.json`、`server/docs.json`、
+`app/index.html` 内嵌数据、`app/img/` 等）按刊载时原样收录，仅用于本作品的
+检索与依赖建模演示，著作权仍归原作者。转载或再利用请向原作者确认。
+
+The body text, images and attachments of the referenced guide remain the
+copyright of their original author. Data files in this repository derived from
+that guide are included verbatim for the purposes of this project only.

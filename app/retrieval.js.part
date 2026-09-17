@@ -1,0 +1,186 @@
+/* ==================== 検索（自然文で資料を引く） ====================
+   日本語は語の区切りが無いので、辞書を持たずに 2-gram を単位にして
+   BM25 で並べる。これに二つ足している：
+
+   1. 同義語（synonyms.json）— 「ケータイ」と資料の「携帯」は 2-gram が
+      重ならない。質問側に資料の言い回しを足して橋渡しする。
+   2. 内容語の完全一致 — 「中関新園」「居留許可」のような固有名詞は
+      2-gram に割ると散って、関係ない記事に負ける。語がそのまま出てくる
+      文書を別枠で押し上げる。
+
+   proto_retrieval.py と同じ式。12 問の手作り評価で recall@8 = 12/12。 */
+
+var SEARCH = (function(){
+  "use strict";
+
+  var K1 = 1.2;
+  var B = 0.82;        /* 長い記事（9.1 その他情報）が何にでも当たるのを抑える */
+  var W_TITLE = 3;
+  var W_HEADING = 3;
+  var W_SYN = 0.45;    /* 同義語で足した分は本来の語より軽く */
+  var W_EXACT = 6.0;   /* 内容語がそのまま出てくる文書を強く押し上げる */
+
+  var PUNCT = /[（）()「」『』【】、。・,.:：;；!！?？\-—–ー~〜\/｜|"'’”＋+*#＃※→←↑↓…]/g;
+  var KANJI = "一-鿿々〆";
+  var KATA = "ァ-ヺー";
+  var CONTENT = new RegExp("[" + KANJI + "]{2,}|[" + KATA + "]{2,}|[a-z0-9]{2,}", "g");
+
+  var SCRAP = document.createElement("div");
+  function untag(html){
+    SCRAP.innerHTML = html;
+    return SCRAP.textContent || "";
+  }
+
+  function norm(s){
+    s = (s || "").normalize("NFKC").toLowerCase();
+    s = s.replace(/[\s　]+/g, "").replace(PUNCT, "");
+    return s;
+  }
+  function grams(s){
+    s = norm(s);
+    if(s.length < 2) return s ? [s] : [];
+    var out = [];
+    for(var i = 0; i < s.length - 1; i++) out.push(s.substr(i, 2));
+    return out;
+  }
+  function contentWords(q){
+    return norm(q).match(CONTENT) || [];
+  }
+
+  var syn = [];        /* [[正規化した見出し語, 資料側の語], ...] */
+  function loadSynonyms(map){
+    syn = Object.keys(map || {}).map(function(k){ return [norm(k), map[k]]; })
+            .filter(function(p){ return p[0]; });
+  }
+  function expand(q){
+    var nq = norm(q), out = [];
+    for(var i = 0; i < syn.length; i++) if(nq.indexOf(syn[i][0]) !== -1) out.push(syn[i][1]);
+    return out.join(" ");
+  }
+
+  var docs = null, tf = null, df = null, post = null, dl = null, flat = null,
+      avgdl = 0, N = 0;
+
+  /* 小節・手続き・用語を 1 件ずつの文書にする */
+  function buildDocs(guide, tasks){
+    var out = [];
+    guide.articles.forEach(function(a){
+      a.sections.forEach(function(s, si){
+        var parts = [];
+        s.blocks.forEach(function(b){
+          if(b.t === "p" || b.t === "label" || b.t === "note" || b.t === "quote"){
+            parts.push(untag(b.html));
+          }else if(b.t === "list"){
+            b.items.forEach(function(i){ parts.push(untag(i)); });
+          }else if(b.t === "dl"){
+            b.rows.forEach(function(r){
+              parts.push((r.k ? r.k + "：" : "") + untag(r.v));
+            });
+          }else if(b.t === "table"){
+            b.rows.forEach(function(r){ parts.push(r.join(" ")); });
+          }else if(b.t === "att"){
+            parts.push(b.name);
+          }else if(b.t === "card"){
+            parts.push(b.title + " " + (b.site || ""));
+          }else if(b.t === "img" || b.t === "fig"){
+            parts.push(b.caption || b.alt || "");
+          }
+        });
+        var body = parts.filter(Boolean).join("\n");
+        if(!body && !s.heading) return;
+        out.push({ id: a.id + "#" + si, kind: "section", articleId: a.id,
+                   title: a.title, heading: s.heading || "", body: body });
+      });
+    });
+    tasks.tasks.forEach(function(t){
+      var parts = [t.summary || ""]
+        .concat(t.bring || [], t.items || [], t.notes || [],
+                [t.cost || "", t.where || "", t.window || ""],
+                (t.requires || []).map(function(r){ return r.why || ""; }));
+      out.push({ id: "task:" + t.id, kind: "task", taskId: t.id,
+                 title: t.title, heading: "", body: parts.filter(Boolean).join("\n") });
+    });
+    tasks.glossary.forEach(function(g){
+      out.push({ id: "term:" + g.cn, kind: "term",
+                 title: g.cn + " / " + g.ja, heading: "", body: g.note || "" });
+    });
+    return out;
+  }
+
+  function build(guide, tasks, synMap){
+    loadSynonyms(synMap);
+    docs = buildDocs(guide, tasks);
+    N = docs.length;
+    tf = new Array(N);
+    dl = new Array(N);
+    flat = new Array(N);
+    df = new Map();
+    post = new Map();
+    var total = 0;
+    for(var i = 0; i < N; i++){
+      var d = docs[i];
+      var g = [];
+      var t = grams(d.title), h = grams(d.heading), w;
+      for(w = 0; w < W_TITLE; w++) g = g.concat(t);
+      for(w = 0; w < W_HEADING; w++) g = g.concat(h);
+      g = g.concat(grams(d.body));
+      var c = new Map();
+      for(var j = 0; j < g.length; j++) c.set(g[j], (c.get(g[j]) || 0) + 1);
+      tf[i] = c;
+      dl[i] = g.length;
+      total += g.length;
+      flat[i] = norm(d.title + d.heading + d.body);
+      c.forEach(function(_, term){
+        df.set(term, (df.get(term) || 0) + 1);
+        var p = post.get(term);
+        if(p) p.push(i); else post.set(term, [i]);
+      });
+    }
+    avgdl = total / Math.max(1, N) || 1;
+    return { docs: N, terms: post.size };
+  }
+
+  function bm25(text, weight, scores){
+    var qc = new Map();
+    grams(text).forEach(function(t){ qc.set(t, (qc.get(t) || 0) + 1); });
+    qc.forEach(function(qn, term){
+      var p = post.get(term);
+      if(!p) return;
+      var n = df.get(term);
+      var idf = Math.log(1 + (N - n + 0.5) / (n + 0.5));
+      var boost = Math.min(qn, 3);
+      for(var x = 0; x < p.length; x++){
+        var i = p[x], f = tf[i].get(term);
+        var denom = f + K1 * (1 - B + B * dl[i] / avgdl);
+        scores[i] = (scores[i] || 0) + weight * idf * (f * (K1 + 1) / denom) * boost;
+      }
+    });
+  }
+
+  function search(q, k){
+    if(!docs || !q || !q.trim()) return [];
+    var scores = [];
+    bm25(q, 1, scores);
+    var ex = expand(q);
+    if(ex) bm25(ex, W_SYN, scores);
+
+    contentWords(q).forEach(function(w){
+      if(w.length < 2) return;
+      var hits = 0, i;
+      for(i = 0; i < N; i++) if(flat[i].indexOf(w) !== -1) hits++;
+      if(!hits) return;
+      var idf = Math.log(1 + N / (1 + hits));
+      var add = W_EXACT * idf * Math.log(1 + w.length);
+      for(i = 0; i < N; i++) if(flat[i].indexOf(w) !== -1) scores[i] = (scores[i] || 0) + add;
+    });
+
+    var ranked = [];
+    for(var i = 0; i < N; i++) if(scores[i]) ranked.push([i, scores[i]]);
+    ranked.sort(function(a, b){ return b[1] - a[1]; });
+    return ranked.slice(0, k || 10).map(function(r){
+      return { doc: docs[r[0]], score: r[1] };
+    });
+  }
+
+  return { build: build, search: search, words: contentWords, norm: norm };
+})();

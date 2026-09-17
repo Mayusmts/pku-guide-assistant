@@ -1,0 +1,14 @@
+{
+  "name": "yanyuan-nav-ask",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ask-proxy for the Yanyuan procedure navigator: holds the API key, the source text and the instructions.",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
