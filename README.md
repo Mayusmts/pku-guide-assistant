@@ -15,7 +15,10 @@
 
 前三项不需要联网服务也能用；Agent 需要接一个持有 API 密钥的服务端（见下方运行说明）。
 
-- 在线体验：https://claude.ai/artifact/JQCJtoGoowqnudPQcbUXbg
+- 在线体验：https://mayusmts.github.io/pku-guide-assistant/
+  ——静态托管，**Agent 那一栏不可用**（没有地方安全存放 API 密钥），手续清单・资料检索・术语表完整可用。
+  要连 Agent 需在本地跑 `server/local.py`，或按 [`server/README.md`](server/README.md) 部署服务端
+- Artifact 版：https://claude.ai/artifact/JQCJtoGoowqnudPQcbUXbg
 - 演示视频：（待补）
 - 技术说明：[TECHNICAL.md](TECHNICAL.md) ／ 日文原版：[README.ja.md](README.ja.md)
 

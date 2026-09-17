@@ -4,7 +4,12 @@
 
 中国語版: [README.md](README.md)
 
-公開先: https://claude.ai/artifact/JQCJtoGoowqnudPQcbUXbg
+公開先: https://mayusmts.github.io/pku-guide-assistant/
+（静的ホスティングのため **Agent の欄は使えない**。API キーを安全に置ける場所がないため。
+手続きチェックリスト・資料検索・用語集はそのまま動く。Agent を繋ぐにはローカルで
+`server/local.py` を動かすか、[`server/README.md`](server/README.md) に従って代理サーバを配備する）
+
+Artifact 版: https://claude.ai/artifact/JQCJtoGoowqnudPQcbUXbg
 
 ## なぜチェックリストなのか
 
